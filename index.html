@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VED Logistics Trip Calculator</title>
+<link rel="icon" type="image/jpeg" href="static/icon.jpeg">
+<link rel="apple-touch-icon" href="static/icon.jpeg">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="VED Logistics Trip Calculator">
+<meta property="og:description" content="Live per-trip and monthly profit calculator for trucking operations.">
+<meta property="og:image" content="static/icon.jpeg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +33,6 @@
     --amber:     #fbbf24;
     --input-bg:  #0f0f0f;
     --input-focus: #1a1a1a;
-    --tag-bg:    #1a1a1a;
     --shadow:    0 1px 3px rgba(0,0,0,0.6);
   }
 
@@ -47,7 +52,6 @@
     --amber:     #d97706;
     --input-bg:  #fafafa;
     --input-focus: #ffffff;
-    --tag-bg:    #f0f0f0;
     --shadow:    0 1px 3px rgba(0,0,0,0.08);
   }
 
@@ -73,7 +77,6 @@
     margin-bottom: 20px;
   }
 
-  .header-left {}
   .header-brand {
     font-size: 0.85rem;
     font-weight: 700;
@@ -295,7 +298,6 @@
     text-align: center;
     margin: 10px 0;
     transition: border-color 0.25s, background 0.25s;
-    position: relative;
   }
   .net-box.profit { border-color: var(--green); background: transparent; }
   .net-box.loss   { border-color: var(--red);   background: transparent; }
@@ -408,6 +410,8 @@
   .bd-row.income .bv   { color: var(--green); }
   .bd-row.total-row { background: var(--surface2); }
   .bd-row.total-row .bl { font-weight: 700; color: var(--text); }
+  .bd-row.total-row .bv { color: var(--red); }
+  .rv.amber { color: var(--amber); }
 
   /* ── Layout ── */
   .layout { display: contents; }
@@ -642,7 +646,7 @@
 
   <div class="result-hi" style="margin-top:10px">
     <span class="rl">Gross Monthly</span>
-    <span class="rv" id="gross-monthly-display" style="color:var(--amber)">₹ —</span>
+    <span class="rv amber" id="gross-monthly-display">₹ —</span>
   </div>
 
   <div class="net-box neutral" id="net-monthly-box">
@@ -703,7 +707,7 @@
     </div>
     <div class="bd-row total-row">
       <span class="bl">Total Cost / Trip</span>
-      <span class="bv" id="bd-totalcost" style="color:var(--red)">₹ —</span>
+      <span class="bv" id="bd-totalcost">₹ —</span>
     </div>
   </div>
 </div>
@@ -712,13 +716,16 @@
 </div><!-- /layout -->
 
 <script>
+  const FIXED_MONTHLY = 90000;
   let tollMode = 'one';
 
   function toggleTheme() {
     const html = document.documentElement;
     const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    const next = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
     document.getElementById('theme-btn').textContent = isDark ? '[ Dark ]' : '[ Light ]';
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', next === 'dark' ? '#0a0a0a' : '#f5f5f5');
   }
 
   function setToll(mode) {
@@ -747,7 +754,7 @@
     const tollRaw     = parseFloat(document.getElementById('toll').value)       || 0;
     const misc        = parseFloat(document.getElementById('misc').value)       || 0;
     const dieselInput = document.getElementById('dieselprice').value;
-    const dieselPrice = dieselInput !== '' ? parseFloat(dieselInput) || 94 : 94;
+    const dieselPrice = (dieselInput !== '' && parseFloat(dieselInput) > 0) ? parseFloat(dieselInput) : 94;
 
     const roundtrip = dist * 2;
     const bhada     = rate * 38;
@@ -770,7 +777,7 @@
     const tripsMonth   = tripDays > 0 ? 30 / tripDays : 0;
     const monthlyRun   = tripsMonth * roundtrip;
     const grossMonthly = netTrip * tripsMonth;
-    const netMonthly   = grossMonthly - 90000;
+    const netMonthly   = grossMonthly - FIXED_MONTHLY;
 
     const hasRate = rate > 0;
     const hasDist = dist > 0;
