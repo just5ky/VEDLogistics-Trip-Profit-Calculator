@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VED Logistics Trip Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Theme tokens ── */
+  [data-theme="dark"] {
+    --bg:        #0a0a0a;
+    --surface:   #111111;
+    --surface2:  #161616;
+    --border:    #222222;
+    --border2:   #2a2a2a;
+    --text:      #ebebeb;
+    --text2:     #a0a0a0;
+    --muted:     #555555;
+    --accent:    #e8e8e8;
+    --accent-dim:#333333;
+    --green:     #4ade80;
+    --red:       #f87171;
+    --amber:     #fbbf24;
+    --input-bg:  #0f0f0f;
+    --input-focus: #1a1a1a;
+    --tag-bg:    #1a1a1a;
+    --shadow:    0 1px 3px rgba(0,0,0,0.6);
+  }
+
+  [data-theme="light"] {
+    --bg:        #f5f5f5;
+    --surface:   #ffffff;
+    --surface2:  #f8f8f8;
+    --border:    #e0e0e0;
+    --border2:   #d0d0d0;
+    --text:      #111111;
+    --text2:     #555555;
+    --muted:     #999999;
+    --accent:    #111111;
+    --accent-dim:#eeeeee;
+    --green:     #16a34a;
+    --red:       #dc2626;
+    --amber:     #d97706;
+    --input-bg:  #fafafa;
+    --input-focus: #ffffff;
+    --tag-bg:    #f0f0f0;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  /* ── Base ── */
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+    min-height: 100vh;
+    padding: 0 16px 48px;
+    transition: background 0.2s, color 0.2s;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .header-left {}
+  .header-brand {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+  .header-brand span {
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .header-sub {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: inherit;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .theme-toggle:hover {
+    border-color: var(--text2);
+    color: var(--text);
+    background: var(--accent-dim);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title .ct-num {
+    color: var(--text2);
+    font-weight: 400;
+  }
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Fields ── */
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-wrap .prefix {
+    position: absolute;
+    left: 10px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    pointer-events: none;
+    font-family: inherit;
+  }
+  .input-wrap .suffix {
+    position: absolute;
+    right: 10px;
+    color: var(--muted);
+    font-size: 0.65rem;
+    pointer-events: none;
+    font-family: inherit;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 9px 36px 9px 24px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus {
+    border-color: var(--text2);
+    background: var(--input-focus);
+  }
+  input[type="number"]::placeholder { color: var(--muted); }
+
+  .readonly-field {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 9px 10px;
+    font-size: 0.82rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: inherit;
+  }
+  .readonly-field .rf-label {
+    color: var(--muted);
+    font-size: 0.6rem;
+    letter-spacing: 0.3px;
+  }
+  .readonly-field .rf-value {
+    color: var(--text2);
+    font-weight: 600;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* ── Toll toggle ── */
+  .toll-group { display: flex; gap: 8px; }
+  .toll-group .input-wrap { flex: 1; }
+
+  .seg-ctrl {
+    display: flex;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .seg-ctrl button {
+    background: none;
+    border: none;
+    border-right: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 0 10px;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .seg-ctrl button:last-child { border-right: none; }
+  .seg-ctrl button.active {
+    background: var(--accent-dim);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .seg-ctrl button:hover:not(.active) { color: var(--text2); }
+
+  /* ── Results card ── */
+  .results-card { background: var(--surface); }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row .rl { font-size: 0.68rem; color: var(--muted); letter-spacing: 0.3px; text-transform: uppercase; }
+  .result-row .rv { font-size: 0.82rem; font-weight: 600; color: var(--text2); }
+
+  .result-hi {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .result-hi .rl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .result-hi .rv { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+
+  /* Net monthly hero */
+  .net-box {
+    border: 1px solid var(--border);
+    padding: 20px 16px;
+    text-align: center;
+    margin: 10px 0;
+    transition: border-color 0.25s, background 0.25s;
+    position: relative;
+  }
+  .net-box.profit { border-color: var(--green); background: transparent; }
+  .net-box.loss   { border-color: var(--red);   background: transparent; }
+  .net-box.neutral{ border-color: var(--border); }
+
+  .net-box .nb-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .net-box .nb-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text2);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .net-box.profit .nb-value { color: var(--green); }
+  .net-box.loss   .nb-value { color: var(--red); }
+
+  .net-box .nb-tag {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    margin-top: 10px;
+    color: var(--muted);
+  }
+  .net-box.profit .nb-tag { border-color: var(--green); color: var(--green); }
+  .net-box.loss   .nb-tag { border-color: var(--red);   color: var(--red); }
+
+  /* Fixed deductions */
+  .fixed-block {
+    border: 1px solid var(--border);
+    margin-top: 10px;
+  }
+  .fixed-block-title {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .fn-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .fn-row:last-child { border-bottom: none; }
+  .fn-row .fk { color: var(--text2); }
+  .fn-row .fv { color: var(--text); font-weight: 600; }
+  .fn-row.total { background: var(--surface2); }
+  .fn-row.total .fk { color: var(--text); font-weight: 700; }
+  .fn-row.total .fv { color: var(--red); }
+
+  /* Breakdown accordion */
+  .breakdown-toggle {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .breakdown-toggle:hover { border-color: var(--text2); color: var(--text2); }
+  .breakdown-toggle .arrow { transition: transform 0.2s; font-style: normal; }
+  .breakdown-toggle.open .arrow { transform: rotate(180deg); }
+
+  .breakdown-body {
+    display: none;
+    border: 1px solid var(--border);
+    border-top: none;
+    margin-top: 0;
+  }
+  .breakdown-body.open { display: block; }
+
+  .bd-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem;
+  }
+  .bd-row:last-child { border-bottom: none; }
+  .bd-row .bl { color: var(--text2); }
+  .bd-row .bv { font-weight: 700; color: var(--text); }
+  .bd-row.negative .bv { color: var(--red); }
+  .bd-row.income .bv   { color: var(--green); }
+  .bd-row.total-row { background: var(--surface2); }
+  .bd-row.total-row .bl { font-weight: 700; color: var(--text); }
+
+  /* ── Layout ── */
+  .layout { display: contents; }
+
+  /* ── Desktop: 2-col, no scroll ── */
+  @media (min-width: 768px) {
+    body {
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 14px 24px 12px;
+      margin-bottom: 0;
+      flex-shrink: 0;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .inputs-col {
+      overflow-y: auto;
+      padding: 16px 14px 16px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .inputs-col::-webkit-scrollbar { width: 4px; }
+    .inputs-col::-webkit-scrollbar-track { background: transparent; }
+    .inputs-col::-webkit-scrollbar-thumb { background: var(--border2); }
+
+    .results-col {
+      overflow-y: auto;
+      padding: 16px 24px 16px 14px;
+    }
+    .results-col::-webkit-scrollbar { width: 4px; }
+    .results-col::-webkit-scrollbar-track { background: transparent; }
+    .results-col::-webkit-scrollbar-thumb { background: var(--border2); }
+
+    .card { margin-bottom: 10px; padding: 14px 16px; }
+    .card:last-child { margin-bottom: 0; }
+    .field { margin-bottom: 10px; }
+    input[type="number"] { padding: 8px 36px 8px 24px; font-size: 0.78rem; }
+    .readonly-field { padding: 8px 10px; font-size: 0.78rem; }
+    .result-row { padding: 7px 0; }
+    .result-hi { padding: 9px 12px; margin-bottom: 8px; }
+    .net-box { padding: 16px 14px; }
+    .net-box .nb-value { font-size: 1.35rem; }
+    .card-title { margin-bottom: 12px; }
+    .fixed-block { margin-top: 8px; }
+    .breakdown-toggle { margin-top: 8px; }
+  }
+
+  @media (min-width: 1200px) {
+    .layout { grid-template-columns: 1.1fr 0.9fr; }
+  }
+
+  /* Mobile header: stack branding */
+  @media (max-width: 767px) {
+    .header-brand { font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-brand">VED <span>// _</span> Logistics</div>
+    <div class="header-sub">Trip Profit Calculator</div>
+  </div>
+  <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">[ Light ]</button>
+</header>
+
+<div class="layout">
+<div class="inputs-col">
+
+<!-- 01 Trip Details -->
+<div class="card">
+  <div class="card-title"><span class="ct-num">01 //</span> Trip Details</div>
+
+  <div class="two-col">
+    <div class="field">
+      <label>Rate</label>
+      <div class="input-wrap">
+        <span class="prefix">₹</span>
+        <input type="number" id="rate" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Distance (one way)</label>
+      <div class="input-wrap">
+        <input type="number" id="distance" placeholder="0" min="0" style="padding-left:10px">
+        <span class="suffix">km</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Round Trip Distance</label>
+    <div class="readonly-field">
+      <span class="rf-label">Auto · dist × 2</span>
+      <span class="rf-value" id="roundtrip-display">— km</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Trip Time</label>
+    <div class="input-wrap">
+      <input type="number" id="triptime" placeholder="0" min="0" style="padding-left:10px">
+      <span class="suffix">hrs</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="field">
+      <label>Commission</label>
+      <div class="input-wrap">
+        <span class="prefix">₹</span>
+        <input type="number" id="commission" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Driver / Trip</label>
+      <div class="input-wrap">
+        <span class="prefix">₹</span>
+        <input type="number" id="driver" placeholder="0" min="0">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 Costs -->
+<div class="card">
+  <div class="card-title"><span class="ct-num">02 //</span> Costs</div>
+
+  <div class="field">
+    <label>Bhada (Revenue)</label>
+    <div class="readonly-field">
+      <span class="rf-label">Rate × 38</span>
+      <span class="rf-value" id="bhada-display">₹ —</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="field">
+      <label>TDS (auto)</label>
+      <div class="readonly-field">
+        <span class="rf-label">1% of Bhada</span>
+        <span class="rf-value" id="tds-display">₹ —</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Diesel Price</label>
+      <div class="input-wrap">
+        <span class="prefix">₹</span>
+        <input type="number" id="dieselprice" placeholder="94" min="0">
+        <span class="suffix">/L</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="field">
+      <label>Diesel Cost (auto)</label>
+      <div class="readonly-field">
+        <span class="rf-label" id="diesel-rate-label">@₹94 · 2.5km/L</span>
+        <span class="rf-value" id="diesel-display">₹ —</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Adblue (auto)</label>
+      <div class="readonly-field">
+        <span class="rf-label">₹300/100km</span>
+        <span class="rf-value" id="adblue-display">₹ —</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Toll</label>
+    <div class="toll-group">
+      <div class="input-wrap">
+        <span class="prefix">₹</span>
+        <input type="number" id="toll" placeholder="0" min="0">
+      </div>
+      <div class="seg-ctrl">
+        <button id="toll-one" class="active" onclick="setToll('one')">1-WAY</button>
+        <button id="toll-both" onclick="setToll('both')">2-WAY</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Misc</label>
+    <div class="input-wrap">
+      <span class="prefix">₹</span>
+      <input type="number" id="misc" placeholder="0" min="0">
+    </div>
+  </div>
+</div>
+
+</div><!-- /inputs-col -->
+<div class="results-col">
+
+<!-- 03 Results -->
+<div class="card results-card">
+  <div class="card-title"><span class="ct-num">03 //</span> Results</div>
+
+  <div class="result-hi">
+    <span class="rl">Net Profit / Trip</span>
+    <span class="rv" id="net-trip-display">₹ —</span>
+  </div>
+
+  <div class="result-row">
+    <span class="rl">Trip Time</span>
+    <span class="rv" id="triptime-result">—</span>
+  </div>
+  <div class="result-row">
+    <span class="rl">Trips / Month</span>
+    <span class="rv" id="trips-month-display">—</span>
+  </div>
+  <div class="result-row">
+    <span class="rl">Monthly Run</span>
+    <span class="rv" id="monthly-run-display">— km</span>
+  </div>
+
+  <div class="result-hi" style="margin-top:10px">
+    <span class="rl">Gross Monthly</span>
+    <span class="rv" id="gross-monthly-display" style="color:var(--amber)">₹ —</span>
+  </div>
+
+  <div class="net-box neutral" id="net-monthly-box">
+    <div class="nb-label">Net Monthly Profit</div>
+    <div class="nb-value" id="net-monthly-display">₹ —</div>
+    <div class="nb-tag" id="net-monthly-badge">Awaiting input</div>
+  </div>
+
+  <!-- Fixed deductions -->
+  <div class="fixed-block">
+    <div class="fixed-block-title">Fixed Monthly Deductions</div>
+    <div class="fn-row"><span class="fk">Vehicle EMI</span><span class="fv">₹ 60,000</span></div>
+    <div class="fn-row"><span class="fk">Driver Salary</span><span class="fv">₹ 15,000</span></div>
+    <div class="fn-row"><span class="fk">Vehicle Maintenance</span><span class="fv">₹ 15,000</span></div>
+    <div class="fn-row total">
+      <span class="fk">Total Fixed</span>
+      <span class="fv">₹ 90,000</span>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <button class="breakdown-toggle" id="breakdown-btn" onclick="toggleBreakdown()">
+    <span>Cost Breakdown / Trip</span>
+    <span class="arrow">▼</span>
+  </button>
+  <div class="breakdown-body" id="breakdown-body">
+    <div class="bd-row income">
+      <span class="bl">Bhada (Revenue)</span>
+      <span class="bv" id="bd-bhada">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">TDS</span>
+      <span class="bv" id="bd-tds">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">Commission</span>
+      <span class="bv" id="bd-commission">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">Driver / Trip</span>
+      <span class="bv" id="bd-driver">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">Diesel</span>
+      <span class="bv" id="bd-diesel">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">Adblue</span>
+      <span class="bv" id="bd-adblue">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">Toll (effective)</span>
+      <span class="bv" id="bd-toll">₹ —</span>
+    </div>
+    <div class="bd-row negative">
+      <span class="bl">Misc</span>
+      <span class="bv" id="bd-misc">₹ —</span>
+    </div>
+    <div class="bd-row total-row">
+      <span class="bl">Total Cost / Trip</span>
+      <span class="bv" id="bd-totalcost" style="color:var(--red)">₹ —</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /results-col -->
+</div><!-- /layout -->
+
+<script>
+  let tollMode = 'one';
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('theme-btn').textContent = isDark ? '[ Dark ]' : '[ Light ]';
+  }
+
+  function setToll(mode) {
+    tollMode = mode;
+    document.getElementById('toll-one').classList.toggle('active', mode === 'one');
+    document.getElementById('toll-both').classList.toggle('active', mode === 'both');
+    calculate();
+  }
+
+  function toggleBreakdown() {
+    document.getElementById('breakdown-btn').classList.toggle('open');
+    document.getElementById('breakdown-body').classList.toggle('open');
+  }
+
+  function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return '₹ ' + Math.round(n).toLocaleString('en-IN');
+  }
+
+  function calculate() {
+    const rate        = parseFloat(document.getElementById('rate').value)       || 0;
+    const dist        = parseFloat(document.getElementById('distance').value)   || 0;
+    const triptime    = parseFloat(document.getElementById('triptime').value)   || 0;
+    const comm        = parseFloat(document.getElementById('commission').value) || 0;
+    const driver      = parseFloat(document.getElementById('driver').value)     || 0;
+    const tollRaw     = parseFloat(document.getElementById('toll').value)       || 0;
+    const misc        = parseFloat(document.getElementById('misc').value)       || 0;
+    const dieselInput = document.getElementById('dieselprice').value;
+    const dieselPrice = dieselInput !== '' ? parseFloat(dieselInput) || 94 : 94;
+
+    const roundtrip = dist * 2;
+    const bhada     = rate * 38;
+    const tds       = bhada * 0.01;
+    const diesel    = roundtrip * dieselPrice / 2.5;
+    const adblue    = roundtrip / 100 * 300;
+    const toll      = tollMode === 'one' ? tollRaw * 2 : tollRaw;
+
+    // Auto-calc displays
+    document.getElementById('roundtrip-display').textContent = dist ? roundtrip.toLocaleString('en-IN') + ' km' : '— km';
+    document.getElementById('bhada-display').textContent     = rate ? fmt(bhada) : '₹ —';
+    document.getElementById('tds-display').textContent       = rate ? fmt(tds)   : '₹ —';
+    document.getElementById('diesel-rate-label').textContent = '@₹' + dieselPrice + ' · 2.5km/L';
+    document.getElementById('diesel-display').textContent    = dist ? fmt(diesel) : '₹ —';
+    document.getElementById('adblue-display').textContent    = dist ? fmt(adblue) : '₹ —';
+
+    const totalCost    = tds + comm + driver + diesel + adblue + toll + misc;
+    const netTrip      = bhada - totalCost;
+    const tripDays     = triptime / 24;
+    const tripsMonth   = tripDays > 0 ? 30 / tripDays : 0;
+    const monthlyRun   = tripsMonth * roundtrip;
+    const grossMonthly = netTrip * tripsMonth;
+    const netMonthly   = grossMonthly - 90000;
+
+    const hasRate = rate > 0;
+    const hasDist = dist > 0;
+    const hasTime = triptime > 0;
+
+    // Net / trip
+    const ntEl = document.getElementById('net-trip-display');
+    ntEl.textContent = hasRate ? fmt(netTrip) : '₹ —';
+    ntEl.style.color = hasRate
+      ? (netTrip >= 0 ? 'var(--green)' : 'var(--red)')
+      : 'var(--text2)';
+
+    document.getElementById('triptime-result').textContent =
+      hasTime ? triptime + ' hrs · ' + tripDays.toFixed(1) + ' days' : '—';
+
+    document.getElementById('trips-month-display').textContent =
+      hasTime ? tripsMonth.toFixed(1) + ' trips' : '—';
+
+    document.getElementById('monthly-run-display').textContent =
+      (hasDist && hasTime) ? Math.round(monthlyRun).toLocaleString('en-IN') + ' km' : '— km';
+
+    document.getElementById('gross-monthly-display').textContent =
+      (hasRate && hasTime) ? fmt(grossMonthly) : '₹ —';
+
+    // Net monthly hero
+    const box   = document.getElementById('net-monthly-box');
+    const val   = document.getElementById('net-monthly-display');
+    const badge = document.getElementById('net-monthly-badge');
+
+    if (hasRate && hasTime) {
+      val.textContent   = fmt(netMonthly);
+      box.className     = 'net-box ' + (netMonthly >= 0 ? 'profit' : 'loss');
+      badge.textContent = netMonthly >= 0 ? 'Profitable' : 'Loss';
+    } else {
+      val.textContent   = '₹ —';
+      badge.textContent = 'Awaiting input';
+      box.className     = 'net-box neutral';
+    }
+
+    // Breakdown
+    document.getElementById('bd-bhada').textContent      = hasRate ? fmt(bhada)  : '₹ —';
+    document.getElementById('bd-tds').textContent        = hasRate ? fmt(tds)    : '₹ —';
+    document.getElementById('bd-commission').textContent = fmt(comm);
+    document.getElementById('bd-driver').textContent     = fmt(driver);
+    document.getElementById('bd-diesel').textContent     = hasDist ? fmt(diesel) : '₹ —';
+    document.getElementById('bd-adblue').textContent     = hasDist ? fmt(adblue) : '₹ —';
+    document.getElementById('bd-toll').textContent       = fmt(toll);
+    document.getElementById('bd-misc').textContent       = fmt(misc);
+    document.getElementById('bd-totalcost').textContent  = (hasRate || hasDist) ? fmt(totalCost) : '₹ —';
+  }
+
+  document.querySelectorAll('input[type="number"]').forEach(inp => {
+    inp.addEventListener('input', calculate);
+  });
+
+  calculate();
+</script>
+</body>
+</html>
